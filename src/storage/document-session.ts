@@ -66,10 +66,11 @@ function openDatabase(): Promise<IDBDatabase> {
 }
 
 function createId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  const cryptoApi = globalThis.crypto;
+  const uuid = (cryptoApi as Crypto & { randomUUID?: () => string }).randomUUID;
+  if (typeof uuid === "function") return uuid.call(cryptoApi);
   const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined") crypto.getRandomValues(bytes);
-  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  cryptoApi.getRandomValues(bytes);
   return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
 }
 
