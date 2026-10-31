@@ -27,3 +27,7 @@
 .library-actions button{padding:8px 10px;font-size:.82rem}
 .library-actions .quiet-button{background:transparent;opacity:.75}
 @media(max-width:520px){.library-item{align-items:flex-start;flex-direction:column}.library-actions{width:100%}.library-actions button{flex:1}}
+
+/* The inline size preference on the token must also reach its ORP segments. */
+.word-stage > .word-token{font-size:inherit}
+.word-token > span{font-size:inherit}
