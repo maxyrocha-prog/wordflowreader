@@ -3,8 +3,21 @@ import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-export { reconstructPageText } from "./pdf-text";
+export interface ImportedDocument {
+  name: string;
+  words: string[];
+  /** One-based PDF page number for each word. */
+  pages: number[];
+  /** Word index at which each page begins. */
+  pageStarts: number[];
+  /** Reconstructed text for each page, retaining line and paragraph breaks. */
+  pageTexts: string[];
+  /** Paragraphs in reading order, retained for context and navigation features. */
+  paragraphs: string[];
+}
+
 import { reconstructPageText } from "./pdf-text";
+export { reconstructPageText } from "./pdf-text";
 
 export async function readPdf(file: File): Promise<ImportedDocument> {
   const data = new Uint8Array(await file.arrayBuffer());
