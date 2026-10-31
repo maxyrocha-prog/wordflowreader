@@ -14,7 +14,7 @@ describe("PDF page indexing", () => {
   });
 
   it("normalizes line breaks inside paragraphs and preserves paragraph boundaries", () => {
-    const result = indexPdfPages(["Primeira linha\\ncontinua.\\n\\nSegundo parágrafo."]);
+    const result = indexPdfPages(["Primeira linha\ncontinua.\n\nSegundo parágrafo."]);
     expect(result.paragraphs).toEqual([
       "Primeira linha continua.",
       "Segundo parágrafo."
@@ -22,7 +22,7 @@ describe("PDF page indexing", () => {
   });
 
   it("handles empty pages and whitespace without creating phantom words", () => {
-    const result = indexPdfPages(["  \\n ", "Texto   com espaços"]);
+    const result = indexPdfPages(["  \n ", "Texto   com espaços"]);
     expect(result.words).toEqual(["Texto", "com", "espaços"]);
     expect(result.pages).toEqual([2, 2, 2]);
     expect(result.paragraphs).toEqual(["Texto com espaços"]);
