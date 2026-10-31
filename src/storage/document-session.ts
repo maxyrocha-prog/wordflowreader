@@ -95,7 +95,7 @@ export async function saveDocument(file: File, wordCount = 0): Promise<string> {
   }
 }
 
-export async function saveLastPosition(index: number, documentId?: string): Promise<void> {
+export async function saveLastPosition(index: number, documentId?: string, wordCount?: number): Promise<void> {
   const database = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
@@ -110,6 +110,7 @@ export async function saveLastPosition(index: number, documentId?: string): Prom
           if (record) {
             record.lastIndex = Math.max(0, Math.floor(index));
             record.updatedAt = Date.now();
+            if (wordCount !== undefined) record.wordCount = wordCount;
             store.put(record);
           }
         };
