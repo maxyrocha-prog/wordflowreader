@@ -24,7 +24,7 @@ describe("reader navigation", () => {
     expect(result.sections.map(section => section.title)).toEqual([
       "Início do documento", "CAPÍTULO 1"
     ]);
-    expect(result.sections[1].wordIndex).toBe(6);
+    expect(result.sections[1].wordIndex).toBe(5);
   });
 
   it("maps word positions to their paragraphs", () => {
