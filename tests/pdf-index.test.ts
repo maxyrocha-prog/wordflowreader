@@ -21,6 +21,17 @@ describe("PDF page indexing", () => {
     ]);
   });
 
+  it("indexes a large page without losing words or page references", () => {
+    const largePage = Array.from({ length: 12_000 }, (_, index) => `palavra${index}`).join(" ");
+    const result = indexPdfPages([largePage]);
+
+    expect(result.words).toHaveLength(12_000);
+    expect(result.words[0]).toBe("palavra0");
+    expect(result.words[11_999]).toBe("palavra11999");
+    expect(result.pages).toHaveLength(12_000);
+    expect(result.pages.every(page => page === 1)).toBe(true);
+  });
+
   it("handles empty pages and whitespace without creating phantom words", () => {
     const result = indexPdfPages(["  \n ", "Texto   com espaços"]);
     expect(result.words).toEqual(["Texto", "com", "espaços"]);
