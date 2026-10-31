@@ -66,6 +66,17 @@ describe("local document library", () => {
     expect(second).not.toBe(first);
   });
 
+  it("keeps independent reading positions for each PDF", async () => {
+    const first = await saveDocument(new File(["primeiro"], "primeiro.pdf", { type: "application/pdf" }), 30);
+    const second = await saveDocument(new File(["segundo"], "segundo.pdf", { type: "application/pdf" }), 50);
+
+    await saveLastPosition(7, first, 30);
+    await saveLastPosition(23, second, 50);
+
+    expect((await loadLibraryDocument(first))?.index).toBe(7);
+    expect((await loadLibraryDocument(second))?.index).toBe(23);
+  });
+
   it("removes a document from the library and last-session pointer", async () => {
     const id = await saveDocument(new File(["remover"], "remover.pdf", { type: "application/pdf" }), 1);
     await removeLibraryDocument(id);
