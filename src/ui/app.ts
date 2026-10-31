@@ -1,4 +1,5 @@
 import { readPdf, type ImportedDocument } from "../core/pdf";
+import { splitAtOrp } from "../core/orp";
 import { preferences, type ReaderTheme } from "../storage/preferences";
 
 export function mountApp(root: HTMLElement): void {
@@ -21,7 +22,7 @@ export function mountApp(root: HTMLElement): void {
       </header>
       <section class="reader-card">
         <div class="reader-label">PALAVRA ATUAL</div>
-        <div class="word-stage"><span id="word">Abra um PDF para começar</span></div>
+        <div class="word-stage"><span id="word" class="word-token"><span id="wordBefore"></span><span id="wordPivot" class="orp-pivot">Abra um PDF para começar</span><span id="wordAfter"></span></span></div>
         <div class="reader-footer"><span id="counter">0 / 0 palavras</span><span id="page">Página —</span></div>
       </section>
       <section class="controls">
@@ -44,6 +45,9 @@ export function mountApp(root: HTMLElement): void {
 
   const $ = <T extends HTMLElement>(id: string) => root.querySelector<T>(`#${id}`)!;
   const word = $("word");
+  const wordBefore = $("wordBefore");
+  const wordPivot = $("wordPivot");
+  const wordAfter = $("wordAfter");
   const counter = $("counter");
   const page = $("page");
   const play = $("play") as HTMLButtonElement;
@@ -54,7 +58,11 @@ export function mountApp(root: HTMLElement): void {
 
   function render() {
     if (!documentData) return;
-    word.textContent = documentData.words[index] ?? "";
+    const currentWord = documentData.words[index] ?? "";
+    const parts = splitAtOrp(currentWord);
+    wordBefore.textContent = parts.before;
+    wordPivot.textContent = parts.pivot;
+    wordAfter.textContent = parts.after;
     word.style.fontSize = `clamp(2rem, ${wordSize * 0.62}px, 8rem)`;
     counter.textContent = `${index + 1} / ${documentData.words.length} palavras`;
     page.textContent = `Página ${documentData.pages[index] ?? "—"}`;
