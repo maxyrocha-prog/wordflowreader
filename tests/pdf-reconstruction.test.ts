@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconstructPageText } from "../src/core/pdf";
+import { reconstructPageText } from "../src/core/pdf-text";
 
 function item(str: string, x: number, y: number, options: { width?: number; hasEOL?: boolean } = {}) {
   return {
