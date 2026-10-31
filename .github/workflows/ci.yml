@@ -69,12 +69,16 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android SDK packages
+        env:
+          ANDROID_HOME: ${{ runner.tool_cache }}/android-sdk
         run: |
-          yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            echo "sdkmanager não encontrado no runner"
+            exit 1
+          fi
+          yes | sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install dependencies
         run: npm install
