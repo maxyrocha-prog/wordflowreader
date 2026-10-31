@@ -12,3 +12,18 @@
 .navigation-card select{width:100%;min-height:42px;border-radius:10px;padding:8px 10px;background:var(--surface,#20242b);color:inherit;border:1px solid var(--border,rgba(255,255,255,.16))}
 .context-label{font-size:.7rem;letter-spacing:.12em;font-weight:700;opacity:.65;margin-top:14px}
 .paragraph-context{line-height:1.55;margin:7px 0 0;opacity:.86;max-height:6.2em;overflow:auto}
+
+/* Local PDF library */
+.library-card{background:var(--panel);border:1px solid #71809633;border-radius:18px;padding:16px}
+.library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.library-heading h2{font-size:1.05rem;margin:4px 0 0}
+.library-list{display:grid;gap:10px}
+.library-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #71809633;border-radius:12px;min-width:0}
+.library-info{display:grid;gap:5px;min-width:0;flex:1}
+.library-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.library-progress{height:5px;background:#71809633;border-radius:99px;overflow:hidden;margin-top:2px}
+.library-progress span{display:block;height:100%;background:var(--accent);border-radius:99px}
+.library-actions{display:flex;gap:6px;flex-shrink:0}
+.library-actions button{padding:8px 10px;font-size:.82rem}
+.library-actions .quiet-button{background:transparent;opacity:.75}
+@media(max-width:520px){.library-item{align-items:flex-start;flex-direction:column}.library-actions{width:100%}.library-actions button{flex:1}}
