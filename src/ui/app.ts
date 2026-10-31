@@ -63,6 +63,19 @@ export function mountApp(root: HTMLElement): void {
   const chapterSelect = $("chapterSelect") as HTMLSelectElement;
   const paragraphContext = $("paragraphContext");
 
+  function prepareNavigation(): void {
+    if (!documentData) return;
+    navigation = buildReaderNavigation(documentData);
+    chapterSelect.replaceChildren();
+    navigation.sections.forEach((section, sectionIndex) => {
+      const option = document.createElement("option");
+      option.value = String(sectionIndex);
+      option.textContent = section.title;
+      chapterSelect.append(option);
+    });
+    chapterSelect.disabled = navigation.sections.length === 0;
+  }
+
   function persistPosition(force = false): void {
     if (!documentData) return;
     const now = Date.now();
@@ -125,6 +138,7 @@ export function mountApp(root: HTMLElement): void {
     message.textContent = "Importando e extraindo texto do PDF…";
     try {
       documentData = await readPdf(file);
+      prepareNavigation();
       index = 0;
       try { await saveDocument(file); } catch { /* Reading remains available if local storage is unavailable. */ }
       $("filename").textContent = documentData.name;
@@ -159,6 +173,7 @@ export function mountApp(root: HTMLElement): void {
   void loadLastSession().then(async session => {
     if (!session || documentData) return;
     documentData = await readPdf(session.file);
+    prepareNavigation();
     index = clamp(session.index, 0, Math.max(0, documentData.words.length - 1));
     $("filename").textContent = documentData.name;
     play.disabled = prev.disabled = next.disabled = false;
