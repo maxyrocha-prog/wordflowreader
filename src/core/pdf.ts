@@ -21,24 +21,35 @@ export interface ImportedDocument {
 export { reconstructPageText } from "./pdf-text";
 export { indexPdfPages } from "./pdf-index";
 
+/**
+ * Extracts a PDF and always releases the PDF.js worker/document resources.
+ * This matters especially for large PDFs and repeated imports in a mobile WebView.
+ */
 export async function readPdf(file: File): Promise<ImportedDocument> {
   const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjs.getDocument({ data }).promise;
-  const pageTexts: string[] = [];
+  const loadingTask = pdfjs.getDocument({ data });
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pageTexts.push(reconstructPageText(content.items));
+  try {
+    const pdf = await loadingTask.promise;
+    const pageTexts: string[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pageTexts.push(reconstructPageText(content.items));
+      page.cleanup();
+    }
+
+    const { words, pages, pageStarts, paragraphs } = indexPdfPages(pageTexts);
+
+    if (!words.length) {
+      throw new Error(
+        "Não foi possível extrair texto deste PDF. O documento pode estar digitalizado como imagem e precisar de OCR."
+      );
+    }
+
+    return { name: file.name, words, pages, pageStarts, pageTexts, paragraphs };
+  } finally {
+    await loadingTask.destroy();
   }
-
-  const { words, pages, pageStarts, paragraphs } = indexPdfPages(pageTexts);
-
-  if (!words.length) {
-    throw new Error(
-      "Não foi possível extrair texto deste PDF. O documento pode estar digitalizado como imagem e precisar de OCR."
-    );
-  }
-
-  return { name: file.name, words, pages, pageStarts, pageTexts, paragraphs };
 }
