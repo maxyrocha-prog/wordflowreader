@@ -68,7 +68,7 @@ function openDatabase(): Promise<IDBDatabase> {
 function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) crypto.getRandomValues(bytes);
+  if (typeof crypto !== "undefined") crypto.getRandomValues(bytes);
   else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
   return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
 }
