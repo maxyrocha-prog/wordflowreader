@@ -109,10 +109,15 @@ export async function saveLastPosition(index: number, documentId?: string, wordC
           const record = request.result as StoredDocument | undefined;
           if (record) {
             const requestedIndex = Number.isFinite(index) ? Math.floor(index) : 0;
-            const lastValidIndex = wordCount === undefined ? Number.MAX_SAFE_INTEGER : Math.max(0, Math.floor(wordCount) - 1);
+            const validWordCount = wordCount === undefined
+              ? record.wordCount
+              : Number.isFinite(wordCount) ? Math.max(0, Math.floor(wordCount)) : 0;
+            const lastValidIndex = validWordCount === undefined
+              ? Number.MAX_SAFE_INTEGER
+              : Math.max(0, validWordCount - 1);
             record.lastIndex = Math.min(lastValidIndex, Math.max(0, requestedIndex));
             record.updatedAt = Date.now();
-            if (wordCount !== undefined) record.wordCount = wordCount;
+            if (validWordCount !== undefined) record.wordCount = validWordCount;
             store.put(record);
           }
         };
