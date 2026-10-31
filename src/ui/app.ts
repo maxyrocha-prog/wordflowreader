@@ -81,7 +81,7 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function persistPosition(force = false): void {
-    if (!documentData) return;
+    if (!documentData || !activeDocumentId) return;
     const now = Date.now();
     if (!force && now - lastPersistAt < 1000) return;
     lastPersistAt = now;
