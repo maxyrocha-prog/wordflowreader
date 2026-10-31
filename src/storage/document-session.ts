@@ -13,6 +13,7 @@ interface StoredDocument {
   updatedAt: number;
   addedAt?: number;
   size?: number;
+  wordCount?: number;
 }
 
 export interface RestoredSession {
@@ -28,6 +29,7 @@ export interface LibraryDocument {
   updatedAt: number;
   addedAt: number;
   size: number;
+  wordCount: number;
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -71,7 +73,7 @@ function createId(): string {
   return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
 }
 
-export async function saveDocument(file: File): Promise<string> {
+export async function saveDocument(file: File, wordCount = 0): Promise<string> {
   const database = await openDatabase();
   const id = createId();
   try {
@@ -79,7 +81,7 @@ export async function saveDocument(file: File): Promise<string> {
       const transaction = database.transaction([STORE_NAME, META_STORE], "readwrite");
       transaction.objectStore(STORE_NAME).put({
         id, name: file.name, blob: file, lastIndex: 0,
-        addedAt: Date.now(), updatedAt: Date.now(), size: file.size
+        addedAt: Date.now(), updatedAt: Date.now(), size: file.size, wordCount
       } satisfies StoredDocument);
       transaction.objectStore(META_STORE).put({ key: LAST_OPENED_KEY, value: id });
       transaction.oncomplete = () => resolve();
@@ -132,7 +134,7 @@ export async function listLibraryDocuments(): Promise<LibraryDocument[]> {
     return records.filter(record => record.blob).map(record => ({
       id: record.id, name: record.name, lastIndex: record.lastIndex ?? 0,
       updatedAt: record.updatedAt ?? Date.now(), addedAt: record.addedAt ?? record.updatedAt ?? Date.now(),
-      size: record.size ?? record.blob.size
+      size: record.size ?? record.blob.size, wordCount: record.wordCount ?? 0
     })).sort((a, b) => b.updatedAt - a.updatedAt);
   } finally {
     database.close();
