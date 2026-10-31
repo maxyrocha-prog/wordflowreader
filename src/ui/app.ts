@@ -2,11 +2,12 @@ import { readPdf, type ImportedDocument } from "../core/pdf";
 import { splitAtOrp } from "../core/orp";
 import { buildReaderNavigation, findParagraphIndex, type ReaderNavigation } from "../core/navigation";
 import { preferences, type ReaderTheme } from "../storage/preferences";
-import { loadLastSession, saveDocument, saveLastPosition } from "../storage/document-session";
+import { loadLastSession, saveDocument, saveLastPosition, listLibraryDocuments, loadLibraryDocument, removeLibraryDocument, setLastOpenedDocument } from "../storage/document-session";
 
 export function mountApp(root: HTMLElement): void {
   let documentData: ImportedDocument | null = null;
   let navigation: ReaderNavigation | null = null;
+  let activeDocumentId: string | null = null;
   let index = 0;
   let timer: number | undefined;
   let playing = false;
@@ -36,7 +37,7 @@ export function mountApp(root: HTMLElement): void {
         <button id="prev" disabled aria-label="Palavra anterior">←</button>
         <button id="next" disabled aria-label="Próxima palavra">→</button>
       </section>
-      <section class="settings-card">
+      <section class="library-card"><div class="library-heading"><div><div class="context-label">BIBLIOTECA LOCAL</div><h2>Meus documentos</h2></div><span id="libraryCount" class="muted small">0 PDFs</span></div><div id="libraryList" class="library-list"><p class="muted small">Seus PDFs salvos aparecerão aqui.</p></div></section>\n      <section class="settings-card">
         <div class="setting-row"><label for="speed">Velocidade</label><strong><span id="speedValue">${speed}</span> ppm</strong></div>
         <input id="speed" type="range" min="50" max="800" step="10" value="${speed}">
         <div class="setting-row"><label for="size">Tamanho da palavra</label><strong id="sizeValue">${wordSize}%</strong></div>
@@ -61,7 +62,7 @@ export function mountApp(root: HTMLElement): void {
   const progress = $("progress");
   const message = $("message");
   const chapterSelect = $("chapterSelect") as HTMLSelectElement;
-  const paragraphContext = $("paragraphContext");
+  const paragraphContext = $("paragraphContext");\n  const libraryList = $("libraryList");\n  const libraryCount = $("libraryCount");
 
   function prepareNavigation(): void {
     if (!documentData) return;
@@ -81,9 +82,82 @@ export function mountApp(root: HTMLElement): void {
     const now = Date.now();
     if (!force && now - lastPersistAt < 1000) return;
     lastPersistAt = now;
-    void saveLastPosition(index).catch(() => {
+    void saveLastPosition(index, activeDocumentId ?? undefined).catch(() => {
       message.textContent = "Não foi possível salvar a posição de leitura neste dispositivo.";
     });
+  }
+
+  async function refreshLibrary(): Promise<void> {
+    try {
+      const documents = await listLibraryDocuments();
+      libraryCount.textContent = `${documents.length} PDF${documents.length === 1 ? "" : "s"}`;
+      libraryList.replaceChildren();
+      if (!documents.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted small";
+        empty.textContent = "Nenhum PDF salvo. Use “Abrir PDF” para adicionar o primeiro.";
+        libraryList.append(empty);
+        return;
+      }
+      documents.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "library-item";
+        const info = document.createElement("div");
+        info.className = "library-info";
+        const title = document.createElement("strong");
+        title.textContent = item.name;
+        title.title = item.name;
+        const detail = document.createElement("span");
+        detail.className = "muted small";
+        const percent = item.wordCount > 0 ? Math.min(100, Math.round(item.lastIndex / item.wordCount * 100)) : 0;
+        detail.textContent = item.wordCount > 0
+          ? `${percent}% lido · palavra ${Math.min(item.lastIndex + 1, item.wordCount).toLocaleString("pt-BR")} de ${item.wordCount.toLocaleString("pt-BR")}`
+          : "Ainda sem progresso registrado";
+        const bar = document.createElement("div");
+        bar.className = "library-progress";
+        const fill = document.createElement("span");
+        fill.style.width = `${percent}%`;
+        bar.append(fill);
+        info.append(title, detail, bar);
+        const actions = document.createElement("div");
+        actions.className = "library-actions";
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.textContent = "Abrir";
+        openButton.dataset.openDocument = item.id;
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "Excluir";
+        deleteButton.className = "quiet-button";
+        deleteButton.dataset.deleteDocument = item.id;
+        actions.append(openButton, deleteButton);
+        card.append(info, actions);
+        libraryList.append(card);
+      });
+    } catch {
+      libraryList.textContent = "Não foi possível carregar a biblioteca neste dispositivo.";
+    }
+  }
+
+  async function openSavedDocument(id: string): Promise<void> {
+    stop();
+    message.textContent = "Abrindo documento salvo…";
+    try {
+      const session = await loadLibraryDocument(id);
+      if (!session) throw new Error("Este PDF não está mais disponível na biblioteca.");
+      documentData = await readPdf(session.file);
+      activeDocumentId = session.id;
+      await setLastOpenedDocument(session.id);
+      prepareNavigation();
+      index = clamp(session.index, 0, Math.max(0, documentData.words.length - 1));
+      $("filename").textContent = documentData.name;
+      play.disabled = prev.disabled = next.disabled = false;
+      render();
+      message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;\n    await refreshLibrary();
+      await refreshLibrary();
+    } catch (error) {
+      message.textContent = error instanceof Error ? error.message : "Não foi possível abrir o PDF salvo.";
+    }
   }
 
   function render() {
@@ -140,13 +214,46 @@ export function mountApp(root: HTMLElement): void {
       documentData = await readPdf(file);
       prepareNavigation();
       index = 0;
-      try { await saveDocument(file); } catch { /* Reading remains available if local storage is unavailable. */ }
+      try { activeDocumentId = await saveDocument(file, documentData.words.length); } catch { activeDocumentId = null; /* Reading remains available if local storage is unavailable. */ }
       $("filename").textContent = documentData.name;
       play.disabled = prev.disabled = next.disabled = false;
       render();
-      message.textContent = `${documentData.words.length.toLocaleString("pt-BR")} palavras extraídas.`;
+      message.textContent = `${documentData.words.length.toLocaleString("pt-BR")} palavras extraídas.`;\n      await refreshLibrary();
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : "Falha ao abrir o PDF.";
+    }
+  });
+
+  libraryList.addEventListener("click", event => {
+    const target = event.target as HTMLElement;
+    const openButton = target.closest<HTMLButtonElement>("[data-open-document]");
+    const deleteButton = target.closest<HTMLButtonElement>("[data-delete-document]");
+    if (openButton?.dataset.openDocument) {
+      void openSavedDocument(openButton.dataset.openDocument);
+    } else if (deleteButton?.dataset.deleteDocument) {
+      const id = deleteButton.dataset.deleteDocument;
+      if (!window.confirm("Excluir este PDF da biblioteca deste dispositivo?")) return;
+      void removeLibraryDocument(id).then(async () => {
+        if (activeDocumentId === id) {
+          stop();
+          activeDocumentId = null;
+          documentData = null;
+          navigation = null;
+          $("filename").textContent = "Nenhum documento carregado";
+          wordBefore.textContent = "";
+          wordPivot.textContent = "Abra um PDF para começar";
+          wordAfter.textContent = "";
+          counter.textContent = "0 / 0 palavras";
+          page.textContent = "Página —";
+          progress.style.width = "0%";
+          play.disabled = prev.disabled = next.disabled = true;
+          chapterSelect.replaceChildren(new Option("Carregue um PDF", "0"));
+          chapterSelect.disabled = true;
+          paragraphContext.textContent = "O parágrafo atual aparecerá aqui.";
+        }
+        await refreshLibrary();
+        message.textContent = "PDF excluído da biblioteca local.";
+      }).catch(() => { message.textContent = "Não foi possível excluir este PDF."; });
     }
   });
 
@@ -192,7 +299,7 @@ export function mountApp(root: HTMLElement): void {
     // A fresh session can still be used when IndexedDB is unavailable or empty.
   });
 
-  const themeSelect = $("theme") as HTMLSelectElement;
+  void refreshLibrary();\n\n  const themeSelect = $("theme") as HTMLSelectElement;
   themeSelect.value = theme;
   themeSelect.addEventListener("change", () => {
     theme = themeSelect.value as ReaderTheme;
