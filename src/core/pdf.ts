@@ -1,5 +1,7 @@
 import * as pdfjs from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { reconstructPageText } from "./pdf-text";
+import { indexPdfPages } from "./pdf-index";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -16,36 +18,21 @@ export interface ImportedDocument {
   paragraphs: string[];
 }
 
-import { reconstructPageText } from "./pdf-text";
 export { reconstructPageText } from "./pdf-text";
+export { indexPdfPages } from "./pdf-index";
 
 export async function readPdf(file: File): Promise<ImportedDocument> {
   const data = new Uint8Array(await file.arrayBuffer());
   const pdf = await pdfjs.getDocument({ data }).promise;
-  const words: string[] = [];
-  const pages: number[] = [];
-  const pageStarts: number[] = [];
   const pageTexts: string[] = [];
-  const paragraphs: string[] = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    const pageText = reconstructPageText(content.items);
-    pageTexts.push(pageText);
-    pageStarts.push(words.length);
-
-    for (const paragraph of pageText.split(/\n{2,}/u)) {
-      const normalized = paragraph.replace(/\s*\n\s*/gu, " ").replace(/\s+/gu, " ").trim();
-      if (normalized) paragraphs.push(normalized);
-    }
-
-    const pageWords = pageText.match(/\S+/gu) ?? [];
-    for (const word of pageWords) {
-      words.push(word);
-      pages.push(pageNumber);
-    }
+    pageTexts.push(reconstructPageText(content.items));
   }
+
+  const { words, pages, pageStarts, paragraphs } = indexPdfPages(pageTexts);
 
   if (!words.length) {
     throw new Error(
