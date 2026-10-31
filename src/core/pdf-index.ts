@@ -23,8 +23,10 @@ export function indexPdfPages(pageTexts: string[]): IndexedPdfText {
       if (normalized) paragraphs.push(normalized);
     }
 
-    for (const word of pageText.match(/\S+/gu) ?? []) {
-      words.push(word);
+    // Iterate matches instead of building a temporary array for the entire page.
+    // This reduces peak memory when indexing PDFs with very large pages.
+    for (const match of pageText.matchAll(/\S+/gu)) {
+      words.push(match[0]);
       pages.push(pageIndex + 1);
     }
   });
