@@ -288,7 +288,15 @@ export function mountApp(root: HTMLElement): void {
     if (documentData) render();
   });
 
-  window.addEventListener("pagehide", () => stop());
+  // Android may suspend the WebView when the app goes to the background.
+  // Pause RSVP and persist the exact current position before suspension.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") stop();
+  });
+  window.addEventListener("pagehide", () => {
+    stop();
+    persistPosition(true);
+  });
 
   void loadLastSession().then(async session => {
     if (!session || documentData) return;
