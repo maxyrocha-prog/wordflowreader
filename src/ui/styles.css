@@ -31,3 +31,31 @@
 /* The inline size preference on the token must also reach its ORP segments. */
 .word-stage > .word-token{font-size:inherit}
 .word-token > span{font-size:inherit}
+
+
+/* Mobile ergonomics and safe areas for Android/iOS WebViews. */
+.shell{
+  padding-top:max(14px,env(safe-area-inset-top));
+  padding-right:max(14px,env(safe-area-inset-right));
+  padding-bottom:max(18px,env(safe-area-inset-bottom));
+  padding-left:max(14px,env(safe-area-inset-left));
+}
+button,.file-button,select,input[type="range"]{touch-action:manipulation}
+button,.file-button,select{min-height:44px}
+button:focus-visible,.file-button:focus-within,select:focus-visible,input:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+}
+@media(max-width:520px){
+  .topbar{align-items:flex-start}
+  .topbar select{min-height:44px;max-width:112px}
+  .reader-footer{font-size:.78rem}
+  .word-stage{min-height:150px;padding:12px 4px}
+  .navigation-card{margin:0;padding:14px}
+  .paragraph-context{max-height:5em}
+  .controls{gap:8px}
+  .controls button,.controls .file-button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
