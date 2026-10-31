@@ -315,6 +315,28 @@ export function mountApp(root: HTMLElement): void {
 
   void refreshLibrary();
 
+  // Keyboard controls are ignored while the user is typing or changing a setting.
+  root.addEventListener("keydown", event => {
+    const target = event.target as HTMLElement | null;
+    if (target && (target.isContentEditable || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/u.test(target.tagName))) return;
+    if (event.key === " " || event.key === "ArrowRight" || event.key === "ArrowLeft") {
+      event.preventDefault();
+    }
+    if (event.key === " " && !play.disabled) {
+      playing ? stop() : start();
+    } else if (event.key === "ArrowRight" && !next.disabled) {
+      stop();
+      index = Math.min((documentData?.words.length ?? 1) - 1, index + 1);
+      render();
+      persistPosition(true);
+    } else if (event.key === "ArrowLeft" && !prev.disabled) {
+      stop();
+      index = Math.max(0, index - 1);
+      render();
+      persistPosition(true);
+    }
+  });
+
   const themeSelect = $("theme") as HTMLSelectElement;
   themeSelect.value = theme;
   themeSelect.addEventListener("change", () => {
