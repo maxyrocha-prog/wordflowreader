@@ -1,0 +1,77 @@
+import "fake-indexeddb/auto";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  listLibraryDocuments,
+  loadLastSession,
+  loadLibraryDocument,
+  removeLibraryDocument,
+  saveDocument,
+  saveLastPosition,
+  setLastOpenedDocument
+} from "../src/storage/document-session";
+
+Object.defineProperty(globalThis, "window", {
+  configurable: true,
+  value: globalThis
+});
+
+async function clearDatabase(): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("word-flow-reader");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error("Database deletion was blocked."));
+  });
+}
+
+afterEach(async () => {
+  await clearDatabase();
+});
+
+describe("local document library", () => {
+  it("saves a PDF and lists its metadata", async () => {
+    const file = new File(["PDF sample"], "amostra.pdf", { type: "application/pdf" });
+    const id = await saveDocument(file, 120);
+    const library = await listLibraryDocuments();
+
+    expect(library).toHaveLength(1);
+    expect(library[0]).toMatchObject({
+      id,
+      name: "amostra.pdf",
+      wordCount: 120,
+      lastIndex: 0,
+      size: file.size
+    });
+  });
+
+  it("restores the file and its saved reading position", async () => {
+    const file = new File(["Conteúdo de teste"], "leitura.pdf", { type: "application/pdf" });
+    const id = await saveDocument(file, 40);
+    await saveLastPosition(17, id, 40);
+
+    const restored = await loadLibraryDocument(id);
+    expect(restored?.file.name).toBe("leitura.pdf");
+    expect(restored?.index).toBe(17);
+    expect(await restored?.file.text()).toBe("Conteúdo de teste");
+  });
+
+  it("remembers the last opened document", async () => {
+    const first = await saveDocument(new File(["um"], "um.pdf", { type: "application/pdf" }), 1);
+    const second = await saveDocument(new File(["dois"], "dois.pdf", { type: "application/pdf" }), 2);
+    await setLastOpenedDocument(first);
+
+    const restored = await loadLastSession();
+    expect(restored?.id).toBe(first);
+    expect(restored?.file.name).toBe("um.pdf");
+    expect(second).not.toBe(first);
+  });
+
+  it("removes a document from the library and last-session pointer", async () => {
+    const id = await saveDocument(new File(["remover"], "remover.pdf", { type: "application/pdf" }), 1);
+    await removeLibraryDocument(id);
+
+    expect(await listLibraryDocuments()).toHaveLength(0);
+    expect(await loadLibraryDocument(id)).toBeNull();
+    expect(await loadLastSession()).toBeNull();
+  });
+});
