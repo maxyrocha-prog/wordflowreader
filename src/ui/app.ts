@@ -85,7 +85,7 @@ export function mountApp(root: HTMLElement): void {
     const now = Date.now();
     if (!force && now - lastPersistAt < 1000) return;
     lastPersistAt = now;
-    void saveLastPosition(index, activeDocumentId ?? undefined).catch(() => {
+    void saveLastPosition(index, activeDocumentId ?? undefined, documentData.words.length).catch(() => {
       message.textContent = "Não foi possível salvar a posição de leitura neste dispositivo.";
     });
   }
@@ -112,7 +112,7 @@ export function mountApp(root: HTMLElement): void {
         title.title = item.name;
         const detail = document.createElement("span");
         detail.className = "muted small";
-        const percent = item.wordCount > 0 ? Math.min(100, Math.round(item.lastIndex / item.wordCount * 100)) : 0;
+        const percent = item.wordCount > 0 ? Math.min(100, Math.round((item.lastIndex + 1) / item.wordCount * 100)) : 0;
         detail.textContent = item.wordCount > 0
           ? `${percent}% lido · palavra ${Math.min(item.lastIndex + 1, item.wordCount).toLocaleString("pt-BR")} de ${item.wordCount.toLocaleString("pt-BR")}`
           : "Ainda sem progresso registrado";
@@ -157,7 +157,6 @@ export function mountApp(root: HTMLElement): void {
       play.disabled = prev.disabled = next.disabled = false;
       render();
       message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;
-    await refreshLibrary();
       await refreshLibrary();
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : "Não foi possível abrir o PDF salvo.";
