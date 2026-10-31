@@ -1,29 +1,34 @@
 # Word Flow Reader
 
-Aplicativo multiplataforma de leitura dinâmica RSVP, com importação de PDF e funcionamento offline.
+Aplicativo multiplataforma de leitura dinâmica RSVP, com importação de PDF e funcionamento local/offline.
 
-## Estado do projeto
+## Estado atual
 
-**Fundação técnica inicial (0.1.0).** Esta estrutura é o ponto de partida da migração do protótipo HTML beta. O arquivo original está preservado em `legacy/` e não deve ser alterado durante a migração.
+Migração do protótipo HTML beta em andamento. O protótipo original está preservado em `legacy/` e não deve ser alterado durante a migração.
 
-### Funcionalidades já presentes nesta fundação
-- Importação de PDF e extração de texto com PDF.js.
-- Leitura RSVP, uma palavra por vez.
+### Funcionalidades implementadas
+
+- Importação de PDFs com extração de texto por PDF.js.
+- Leitura RSVP, uma palavra por vez, com destaque do pivô/ORP.
 - Velocidade configurável de 50 a 800 palavras por minuto.
-- Avançar e retroceder palavra.
+- Controles para iniciar, pausar, avançar e retroceder.
+- Atalhos de teclado: espaço, seta para a esquerda e seta para a direita.
 - Quatro temas: escuro, claro, sépia e papiro.
-- Ajuste de tamanho da palavra.
-- Preferências persistidas localmente.
+- Ajuste do tamanho da palavra.
+- Índice de páginas, navegação por capítulos/seções e contexto do parágrafo.
+- Indicador de progresso e contagem de palavras.
+- Biblioteca local de PDFs com posições independentes por documento.
+- Recuperação da última sessão e migração do formato antigo de sessão.
+- Persistência local de preferências e progresso via IndexedDB.
+- Pausa e salvamento da posição quando o aplicativo vai para segundo plano.
 
-### Funcionalidades a migrar e validar contra o protótipo
-- Destaque do pivô/ORP em vermelho.
-- Segmentação e navegação por capítulos.
-- Contexto do parágrafo e navegação por página.
-- Marcadores e retomada exata da leitura.
-- Estatísticas completas, tempo decorrido e progresso.
-- Modo foco e navegação mobile entre leitura/detalhes.
-- Biblioteca local de documentos e persistência robusta via IndexedDB.
-- Tratamento de PDFs digitalizados, incluindo avaliação de OCR.
+### Limitações conhecidas / trabalho pendente
+
+- PDFs digitalizados como imagem não têm texto extraído; OCR ainda não está implementado.
+- PDFs muito extensos ainda são processados integralmente em memória; a leitura incremental/por blocos pode melhorar o consumo de memória.
+- O APK gerado pela automação é de depuração e não está pronto para publicação em loja.
+- Ainda é necessário validar o comportamento em aparelho Android físico.
+- A paridade completa com o protótipo original deve continuar sendo conferida durante a migração.
 
 ## Requisitos
 
@@ -39,21 +44,30 @@ npm install
 npm run dev
 ```
 
-## Build web
+## Testes e build web
 
 ```bash
+npm test
 npm run build
 npm run preview
 ```
 
 ## Preparar plataformas nativas
 
+Para preparar o projeto Android pela primeira vez:
+
 ```bash
-npm run android:add
-npm run cap:sync
+npm run android:setup
 ```
 
-Para preparar o projeto Android pela primeira vez, execute `npm run android:setup`. Nas próximas atualizações do código web, execute `npm run android:sync`. Para abrir o projeto no Android Studio, execute `npm run android:open`. O comando de preparação cria a pasta `android/` no seu computador; ela é ignorada pelo Git neste estágio e ainda não está incluída no repositório.
+Nas próximas atualizações do código web:
+
+```bash
+npm run android:sync
+npm run android:open
+```
+
+A preparação cria a pasta `android/` no seu computador. Ela é ignorada pelo Git neste estágio e é gerada pela automação de CI.
 
 Para iOS, em macOS:
 
@@ -71,12 +85,12 @@ Confirme/ajuste o identificador antes de publicar nas lojas. Ele deve ser único
 
 ## Arquitetura
 
-- `src/core/`: processamento de documentos e lógica de leitura.
+- `src/core/`: processamento de documentos, indexação e lógica de leitura.
 - `src/storage/`: preferências e biblioteca local de PDFs via IndexedDB.
 - `src/ui/`: interface e interação.
 - `android/` e `ios/`: projetos nativos gerados localmente pelo Capacitor (ainda não versionados).
 - `legacy/`: protótipo original preservado para comparação.
-- `.github/workflows/`: automação de build e validação.
+- `.github/workflows/`: automação de build, testes e validação Android.
 
 ## Privacidade
 
@@ -86,6 +100,6 @@ A direção do produto é local-first: documentos e progresso permanecem no disp
 
 1. Não remover funcionalidades existentes sem aprovação.
 2. Não substituir o protótipo original.
-3. Validar mudanças com `npm run build`.
+3. Validar mudanças com `npm test` e `npm run build`.
 4. Separar lógica de leitura, interface e persistência.
 5. Registrar limitações conhecidas e testes realizados.
