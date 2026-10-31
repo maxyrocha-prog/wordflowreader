@@ -8,6 +8,8 @@ export function mountApp(root: HTMLElement): void {
   let documentData: ImportedDocument | null = null;
   let navigation: ReaderNavigation | null = null;
   let activeDocumentId: string | null = null;
+  // Prevent slower PDF imports from replacing a more recent user selection.
+  let documentLoadToken = 0;
   let index = 0;
   let timer: number | undefined;
   let playing = false;
@@ -144,12 +146,16 @@ export function mountApp(root: HTMLElement): void {
   }
 
   async function openSavedDocument(id: string): Promise<void> {
+    const loadToken = ++documentLoadToken;
     stop();
     message.textContent = "Abrindo documento salvo…";
     try {
       const session = await loadLibraryDocument(id);
+      if (loadToken !== documentLoadToken) return;
       if (!session) throw new Error("Este PDF não está mais disponível na biblioteca.");
-      documentData = await readPdf(session.file);
+      const imported = await readPdf(session.file);
+      if (loadToken !== documentLoadToken) return;
+      documentData = imported;
       activeDocumentId = session.id;
       await setLastOpenedDocument(session.id);
       prepareNavigation();
@@ -160,7 +166,9 @@ export function mountApp(root: HTMLElement): void {
       message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;
       await refreshLibrary();
     } catch (error) {
-      message.textContent = error instanceof Error ? error.message : "Não foi possível abrir o PDF salvo.";
+      if (loadToken === documentLoadToken) {
+        message.textContent = error instanceof Error ? error.message : "Não foi possível abrir o PDF salvo.";
+      }
     }
   }
 
@@ -212,10 +220,13 @@ export function mountApp(root: HTMLElement): void {
   $("pdf").addEventListener("change", async event => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    const loadToken = ++documentLoadToken;
     stop();
     message.textContent = "Importando e extraindo texto do PDF…";
     try {
-      documentData = await readPdf(file);
+      const imported = await readPdf(file);
+      if (loadToken !== documentLoadToken) return;
+      documentData = imported;
       prepareNavigation();
       index = 0;
       try { activeDocumentId = await saveDocument(file, documentData.words.length); } catch { activeDocumentId = null; /* Reading remains available if local storage is unavailable. */ }
@@ -225,7 +236,9 @@ export function mountApp(root: HTMLElement): void {
       message.textContent = `${documentData.words.length.toLocaleString("pt-BR")} palavras extraídas.`;
       await refreshLibrary();
     } catch (error) {
-      message.textContent = error instanceof Error ? error.message : "Falha ao abrir o PDF.";
+      if (loadToken === documentLoadToken) {
+        message.textContent = error instanceof Error ? error.message : "Falha ao abrir o PDF.";
+      }
     }
   });
 
@@ -301,9 +314,12 @@ export function mountApp(root: HTMLElement): void {
     persistPosition(true);
   });
 
+  const initialLoadToken = documentLoadToken;
   void loadLastSession().then(async session => {
-    if (!session || documentData) return;
-    documentData = await readPdf(session.file);
+    if (!session || documentData || initialLoadToken !== documentLoadToken) return;
+    const imported = await readPdf(session.file);
+    if (documentData || initialLoadToken !== documentLoadToken) return;
+    documentData = imported;
     activeDocumentId = session.id;
     prepareNavigation();
     index = clamp(session.index, 0, Math.max(0, documentData.words.length - 1));
