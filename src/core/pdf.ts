@@ -29,6 +29,7 @@ function isTextItem(item: unknown): item is PdfTextItem {
     "str" in item && typeof item.str === "string" &&
     "transform" in item && Array.isArray(item.transform) &&
     "width" in item && typeof item.width === "number" &&
+    "height" in item && typeof item.height === "number" &&
     "hasEOL" in item && typeof item.hasEOL === "boolean";
 }
 
