@@ -17,7 +17,7 @@ export function mountApp(root: HTMLElement): void {
   let theme = preferences.theme;
 
   root.innerHTML = `
-    <main class="shell" data-theme="${theme}">
+    <main class="shell" data-theme="${theme}" tabindex="0" aria-label="Leitor Word Flow Reader">
       <header class="topbar">
         <div><div class="eyebrow">LEITURA DINÂMICA</div><h1>Word Flow <span>Reader</span></h1></div>
         <select id="theme" aria-label="Tema">
@@ -45,6 +45,7 @@ export function mountApp(root: HTMLElement): void {
         <input id="size" type="range" min="65" max="120" step="5" value="${wordSize}">
         <div class="progress"><div id="progress"></div></div>
         <p id="filename" class="muted">Nenhum documento carregado</p>
+        <p class="muted small">Atalhos: espaço para iniciar ou pausar · ← → para navegar palavra por palavra.</p>
         <p class="muted small">Sua última leitura é salva neste dispositivo para permitir a retomada posterior.</p>
       </section>
       <div id="message" role="status" aria-live="polite"></div>
