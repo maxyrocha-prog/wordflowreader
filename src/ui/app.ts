@@ -185,12 +185,12 @@ export function mountApp(root: HTMLElement): void {
     next.disabled = index >= documentData.words.length - 1;
   }
 
-  function stop() {
+  function stop(persist = true) {
     playing = false;
     if (timer !== undefined) window.clearInterval(timer);
     timer = undefined;
     play.textContent = "▶ Iniciar";
-    persistPosition(true);
+    if (persist) persistPosition(true);
   }
 
   function start() {
@@ -238,9 +238,11 @@ export function mountApp(root: HTMLElement): void {
     } else if (deleteButton?.dataset.deleteDocument) {
       const id = deleteButton.dataset.deleteDocument;
       if (!window.confirm("Excluir este PDF da biblioteca deste dispositivo?")) return;
+      // Do not enqueue a final position save for a record that is about to be deleted.
+      if (activeDocumentId === id) stop(false);
       void removeLibraryDocument(id).then(async () => {
         if (activeDocumentId === id) {
-          stop();
+          stop(false);
           activeDocumentId = null;
           documentData = null;
           navigation = null;
