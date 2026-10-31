@@ -53,6 +53,8 @@ npm run android:add
 npm run cap:sync
 ```
 
+Para preparar o projeto Android pela primeira vez, execute `npm run android:setup`. Nas próximas atualizações do código web, execute `npm run android:sync`. Para abrir o projeto no Android Studio, execute `npm run android:open`. O comando de preparação cria a pasta `android/` no seu computador; ela é ignorada pelo Git neste estágio e ainda não está incluída no repositório.
+
 Para iOS, em macOS:
 
 ```bash
@@ -70,8 +72,9 @@ Confirme/ajuste o identificador antes de publicar nas lojas. Ele deve ser único
 ## Arquitetura
 
 - `src/core/`: processamento de documentos e lógica de leitura.
-- `src/storage/`: preferências e, na próxima etapa, IndexedDB.
+- `src/storage/`: preferências e biblioteca local de PDFs via IndexedDB.
 - `src/ui/`: interface e interação.
+- `android/` e `ios/`: projetos nativos gerados localmente pelo Capacitor (ainda não versionados).
 - `legacy/`: protótipo original preservado para comparação.
 - `.github/workflows/`: automação de build e validação.
 
