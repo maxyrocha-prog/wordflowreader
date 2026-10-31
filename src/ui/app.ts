@@ -37,7 +37,8 @@ export function mountApp(root: HTMLElement): void {
         <button id="prev" disabled aria-label="Palavra anterior">←</button>
         <button id="next" disabled aria-label="Próxima palavra">→</button>
       </section>
-      <section class="library-card"><div class="library-heading"><div><div class="context-label">BIBLIOTECA LOCAL</div><h2>Meus documentos</h2></div><span id="libraryCount" class="muted small">0 PDFs</span></div><div id="libraryList" class="library-list"><p class="muted small">Seus PDFs salvos aparecerão aqui.</p></div></section>\n      <section class="settings-card">
+      <section class="library-card"><div class="library-heading"><div><div class="context-label">BIBLIOTECA LOCAL</div><h2>Meus documentos</h2></div><span id="libraryCount" class="muted small">0 PDFs</span></div><div id="libraryList" class="library-list"><p class="muted small">Seus PDFs salvos aparecerão aqui.</p></div></section>
+      <section class="settings-card">
         <div class="setting-row"><label for="speed">Velocidade</label><strong><span id="speedValue">${speed}</span> ppm</strong></div>
         <input id="speed" type="range" min="50" max="800" step="10" value="${speed}">
         <div class="setting-row"><label for="size">Tamanho da palavra</label><strong id="sizeValue">${wordSize}%</strong></div>
@@ -62,7 +63,9 @@ export function mountApp(root: HTMLElement): void {
   const progress = $("progress");
   const message = $("message");
   const chapterSelect = $("chapterSelect") as HTMLSelectElement;
-  const paragraphContext = $("paragraphContext");\n  const libraryList = $("libraryList");\n  const libraryCount = $("libraryCount");
+  const paragraphContext = $("paragraphContext");
+  const libraryList = $("libraryList");
+  const libraryCount = $("libraryCount");
 
   function prepareNavigation(): void {
     if (!documentData) return;
@@ -153,7 +156,8 @@ export function mountApp(root: HTMLElement): void {
       $("filename").textContent = documentData.name;
       play.disabled = prev.disabled = next.disabled = false;
       render();
-      message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;\n    await refreshLibrary();
+      message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;
+    await refreshLibrary();
       await refreshLibrary();
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : "Não foi possível abrir o PDF salvo.";
@@ -218,7 +222,8 @@ export function mountApp(root: HTMLElement): void {
       $("filename").textContent = documentData.name;
       play.disabled = prev.disabled = next.disabled = false;
       render();
-      message.textContent = `${documentData.words.length.toLocaleString("pt-BR")} palavras extraídas.`;\n      await refreshLibrary();
+      message.textContent = `${documentData.words.length.toLocaleString("pt-BR")} palavras extraídas.`;
+      await refreshLibrary();
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : "Falha ao abrir o PDF.";
     }
@@ -289,17 +294,21 @@ export function mountApp(root: HTMLElement): void {
   void loadLastSession().then(async session => {
     if (!session || documentData) return;
     documentData = await readPdf(session.file);
+    activeDocumentId = session.id;
     prepareNavigation();
     index = clamp(session.index, 0, Math.max(0, documentData.words.length - 1));
     $("filename").textContent = documentData.name;
     play.disabled = prev.disabled = next.disabled = false;
     render();
     message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;
+    await refreshLibrary();
   }).catch(() => {
     // A fresh session can still be used when IndexedDB is unavailable or empty.
   });
 
-  void refreshLibrary();\n\n  const themeSelect = $("theme") as HTMLSelectElement;
+  void refreshLibrary();
+
+  const themeSelect = $("theme") as HTMLSelectElement;
   themeSelect.value = theme;
   themeSelect.addEventListener("change", () => {
     theme = themeSelect.value as ReaderTheme;
