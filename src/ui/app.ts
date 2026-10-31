@@ -150,6 +150,15 @@ export function mountApp(root: HTMLElement): void {
     }
   });
 
+  chapterSelect.addEventListener("change", () => {
+    const section = navigation?.sections[Number(chapterSelect.value)];
+    if (!section || !documentData) return;
+    stop();
+    index = clamp(section.wordIndex, 0, Math.max(0, documentData.words.length - 1));
+    render();
+    persistPosition(true);
+  });
+
   play.addEventListener("click", () => playing ? stop() : start());
   prev.addEventListener("click", () => { stop(); index = Math.max(0, index - 1); render(); persistPosition(true); });
   next.addEventListener("click", () => { stop(); index = Math.min((documentData?.words.length ?? 1) - 1, index + 1); render(); persistPosition(true); });
