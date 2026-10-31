@@ -15,15 +15,15 @@ export function indexPdfPages(pageTexts: string[]): IndexedPdfText {
   pageTexts.forEach((pageText, pageIndex) => {
     pageStarts.push(words.length);
 
-    for (const paragraph of pageText.split(/\\n{2,}/u)) {
+    for (const paragraph of pageText.split(/\n{2,}/u)) {
       const normalized = paragraph
-        .replace(/\\s*\\n\\s*/gu, " ")
-        .replace(/\\s+/gu, " ")
+        .replace(/\s*\n\s*/gu, " ")
+        .replace(/\s+/gu, " ")
         .trim();
       if (normalized) paragraphs.push(normalized);
     }
 
-    for (const word of pageText.match(/\\S+/gu) ?? []) {
+    for (const word of pageText.match(/\S+/gu) ?? []) {
       words.push(word);
       pages.push(pageIndex + 1);
     }
