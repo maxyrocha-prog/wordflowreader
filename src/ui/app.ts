@@ -84,6 +84,12 @@ export function mountApp(root: HTMLElement): void {
     counter.textContent = `${index + 1} / ${documentData.words.length} palavras`;
     page.textContent = `Página ${documentData.pages[index] ?? "—"}`;
     progress.style.width = `${((index + 1) / documentData.words.length) * 100}%`;
+    if (navigation) {
+      const sectionIndex = navigation.sections.reduce((found, section, i) => section.wordIndex <= index ? i : found, 0);
+      chapterSelect.value = String(sectionIndex);
+      const paragraphIndex = findParagraphIndex(navigation.paragraphs, index);
+      paragraphContext.textContent = navigation.paragraphs[paragraphIndex]?.text ?? "Contexto indisponível.";
+    }
     prev.disabled = index <= 0;
     next.disabled = index >= documentData.words.length - 1;
   }
