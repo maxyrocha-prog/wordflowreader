@@ -66,6 +66,38 @@ describe("local document library", () => {
     expect(second).not.toBe(first);
   });
 
+  it("migrates the previous single-PDF session into the library", async () => {
+    const legacyFile = new File(["sessão antiga"], "antigo.pdf", { type: "application/pdf" });
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("word-flow-reader", 1);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore("documents", { keyPath: "id" });
+      };
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction("documents", "readwrite");
+        transaction.objectStore("documents").put({
+          id: "last-opened",
+          name: legacyFile.name,
+          blob: legacyFile,
+          lastIndex: 11,
+          updatedAt: Date.now()
+        });
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => reject(transaction.error);
+      };
+      request.onerror = () => reject(request.error);
+    });
+
+    const restored = await loadLastSession();
+    expect(restored?.id).toBe("last-opened");
+    expect(restored?.file.name).toBe("antigo.pdf");
+    expect(restored?.index).toBe(11);
+  });
+
   it("keeps independent reading positions for each PDF", async () => {
     const first = await saveDocument(new File(["primeiro"], "primeiro.pdf", { type: "application/pdf" }), 30);
     const second = await saveDocument(new File(["segundo"], "segundo.pdf", { type: "application/pdf" }), 50);
