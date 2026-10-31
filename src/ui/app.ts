@@ -1,12 +1,14 @@
 import { readPdf, type ImportedDocument } from "../core/pdf";
 import { splitAtOrp } from "../core/orp";
 import { preferences, type ReaderTheme } from "../storage/preferences";
+import { loadLastSession, saveDocument, saveLastPosition } from "../storage/document-session";
 
 export function mountApp(root: HTMLElement): void {
   let documentData: ImportedDocument | null = null;
   let index = 0;
   let timer: number | undefined;
   let playing = false;
+  let lastPersistAt = 0;
   let speed = clamp(preferences.speed, 50, 800);
   let wordSize = clamp(preferences.wordSize, 65, 120);
   let theme = preferences.theme;
@@ -38,7 +40,7 @@ export function mountApp(root: HTMLElement): void {
         <input id="size" type="range" min="65" max="120" step="5" value="${wordSize}">
         <div class="progress"><div id="progress"></div></div>
         <p id="filename" class="muted">Nenhum documento carregado</p>
-        <p class="muted small">A versão inicial preserva o fluxo básico de leitura. Marcadores, capítulos e biblioteca serão incorporados nas próximas etapas.</p>
+        <p class="muted small">Sua última leitura é salva neste dispositivo para permitir a retomada posterior.</p>
       </section>
       <div id="message" role="status" aria-live="polite"></div>
     </main>`;
@@ -55,6 +57,16 @@ export function mountApp(root: HTMLElement): void {
   const next = $("next") as HTMLButtonElement;
   const progress = $("progress");
   const message = $("message");
+
+  function persistPosition(force = false): void {
+    if (!documentData) return;
+    const now = Date.now();
+    if (!force && now - lastPersistAt < 1000) return;
+    lastPersistAt = now;
+    void saveLastPosition(index).catch(() => {
+      message.textContent = "Não foi possível salvar a posição de leitura neste dispositivo.";
+    });
+  }
 
   function render() {
     if (!documentData) return;
@@ -76,6 +88,7 @@ export function mountApp(root: HTMLElement): void {
     if (timer !== undefined) window.clearInterval(timer);
     timer = undefined;
     play.textContent = "▶ Iniciar";
+    persistPosition(true);
   }
 
   function start() {
@@ -90,6 +103,7 @@ export function mountApp(root: HTMLElement): void {
       }
       index++;
       render();
+      persistPosition();
     }, 60000 / speed);
   }
 
@@ -101,6 +115,7 @@ export function mountApp(root: HTMLElement): void {
     try {
       documentData = await readPdf(file);
       index = 0;
+      try { await saveDocument(file); } catch { /* Reading remains available if local storage is unavailable. */ }
       $("filename").textContent = documentData.name;
       play.disabled = prev.disabled = next.disabled = false;
       render();
@@ -111,8 +126,8 @@ export function mountApp(root: HTMLElement): void {
   });
 
   play.addEventListener("click", () => playing ? stop() : start());
-  prev.addEventListener("click", () => { stop(); index = Math.max(0, index - 1); render(); });
-  next.addEventListener("click", () => { stop(); index = Math.min((documentData?.words.length ?? 1) - 1, index + 1); render(); });
+  prev.addEventListener("click", () => { stop(); index = Math.max(0, index - 1); render(); persistPosition(true); });
+  next.addEventListener("click", () => { stop(); index = Math.min((documentData?.words.length ?? 1) - 1, index + 1); render(); persistPosition(true); });
 
   $("speed").addEventListener("input", event => {
     speed = Number((event.target as HTMLInputElement).value);
@@ -126,6 +141,20 @@ export function mountApp(root: HTMLElement): void {
     preferences.wordSize = wordSize;
     $("sizeValue").textContent = `${wordSize}%`;
     if (documentData) render();
+  });
+
+  window.addEventListener("pagehide", () => stop());
+
+  void loadLastSession().then(async session => {
+    if (!session || documentData) return;
+    documentData = await readPdf(session.file);
+    index = clamp(session.index, 0, Math.max(0, documentData.words.length - 1));
+    $("filename").textContent = documentData.name;
+    play.disabled = prev.disabled = next.disabled = false;
+    render();
+    message.textContent = `Leitura retomada na palavra ${index + 1} de ${documentData.words.length.toLocaleString("pt-BR")}.`;
+  }).catch(() => {
+    // A fresh session can still be used when IndexedDB is unavailable or empty.
   });
 
   const themeSelect = $("theme") as HTMLSelectElement;
