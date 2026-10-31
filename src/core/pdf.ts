@@ -35,9 +35,13 @@ export async function readPdf(file: File): Promise<ImportedDocument> {
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
       const page = await pdf.getPage(pageNumber);
-      const content = await page.getTextContent();
-      pageTexts.push(reconstructPageText(content.items));
-      page.cleanup();
+      try {
+        const content = await page.getTextContent();
+        pageTexts.push(reconstructPageText(content.items));
+      } finally {
+        // Release page-level resources even if text extraction fails.
+        page.cleanup();
+      }
     }
 
     const { words, pages, pageStarts, paragraphs } = indexPdfPages(pageTexts);
