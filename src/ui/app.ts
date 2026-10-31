@@ -29,6 +29,7 @@ export function mountApp(root: HTMLElement): void {
         <div class="word-stage"><span id="word" class="word-token"><span id="wordBefore"></span><span id="wordPivot" class="orp-pivot">Abra um PDF para começar</span><span id="wordAfter"></span></span></div>
         <div class="reader-footer"><span id="counter">0 / 0 palavras</span><span id="page">Página —</span></div>
       </section>
+      <section class="navigation-card"><label for="chapterSelect">Ir para capítulo ou seção</label><select id="chapterSelect" disabled><option value="0">Carregue um PDF</option></select><div class="context-label">CONTEXTO DO PARÁGRAFO</div><p id="paragraphContext" class="paragraph-context">O parágrafo atual aparecerá aqui.</p></section>
       <section class="controls">
         <label class="file-button">＋ Abrir PDF<input id="pdf" type="file" accept="application/pdf,.pdf" hidden></label>
         <button id="play" class="primary" disabled>▶ Iniciar</button>
@@ -59,6 +60,8 @@ export function mountApp(root: HTMLElement): void {
   const next = $("next") as HTMLButtonElement;
   const progress = $("progress");
   const message = $("message");
+  const chapterSelect = $("chapterSelect") as HTMLSelectElement;
+  const paragraphContext = $("paragraphContext");
 
   function persistPosition(force = false): void {
     if (!documentData) return;
