@@ -1,10 +1,12 @@
 import { readPdf, type ImportedDocument } from "../core/pdf";
 import { splitAtOrp } from "../core/orp";
+import { buildReaderNavigation, findParagraphIndex, type ReaderNavigation } from "../core/navigation";
 import { preferences, type ReaderTheme } from "../storage/preferences";
 import { loadLastSession, saveDocument, saveLastPosition } from "../storage/document-session";
 
 export function mountApp(root: HTMLElement): void {
   let documentData: ImportedDocument | null = null;
+  let navigation: ReaderNavigation | null = null;
   let index = 0;
   let timer: number | undefined;
   let playing = false;
