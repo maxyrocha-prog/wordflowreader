@@ -122,6 +122,18 @@ describe("local document library", () => {
     expect((await loadLibraryDocument(id))?.index).toBe(0);
   });
 
+  it("normalizes invalid word counts before saving progress", async () => {
+    const id = await saveDocument(new File(["vazio"], "vazio.pdf", { type: "application/pdf" }), 5);
+
+    await saveLastPosition(4, id, -10);
+    let saved = await listLibraryDocuments();
+    expect(saved[0]).toMatchObject({ wordCount: 0, lastIndex: 0 });
+
+    await saveLastPosition(4, id, Number.NaN);
+    saved = await listLibraryDocuments();
+    expect(saved[0]).toMatchObject({ wordCount: 0, lastIndex: 0 });
+  });
+
   it("removes a document from the library and last-session pointer", async () => {
     const id = await saveDocument(new File(["remover"], "remover.pdf", { type: "application/pdf" }), 1);
     await removeLibraryDocument(id);
