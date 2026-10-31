@@ -109,6 +109,19 @@ describe("local document library", () => {
     expect((await loadLibraryDocument(second))?.index).toBe(23);
   });
 
+  it("clamps saved positions to the valid word range", async () => {
+    const id = await saveDocument(new File(["limites"], "limites.pdf", { type: "application/pdf" }), 10);
+
+    await saveLastPosition(99, id, 10);
+    expect((await loadLibraryDocument(id))?.index).toBe(9);
+
+    await saveLastPosition(-5, id, 10);
+    expect((await loadLibraryDocument(id))?.index).toBe(0);
+
+    await saveLastPosition(Number.NaN, id, 10);
+    expect((await loadLibraryDocument(id))?.index).toBe(0);
+  });
+
   it("removes a document from the library and last-session pointer", async () => {
     const id = await saveDocument(new File(["remover"], "remover.pdf", { type: "application/pdf" }), 1);
     await removeLibraryDocument(id);
