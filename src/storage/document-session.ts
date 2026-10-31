@@ -108,7 +108,9 @@ export async function saveLastPosition(index: number, documentId?: string, wordC
         request.onsuccess = () => {
           const record = request.result as StoredDocument | undefined;
           if (record) {
-            record.lastIndex = Math.max(0, Math.floor(index));
+            const requestedIndex = Number.isFinite(index) ? Math.floor(index) : 0;
+            const lastValidIndex = wordCount === undefined ? Number.MAX_SAFE_INTEGER : Math.max(0, Math.floor(wordCount) - 1);
+            record.lastIndex = Math.min(lastValidIndex, Math.max(0, requestedIndex));
             record.updatedAt = Date.now();
             if (wordCount !== undefined) record.wordCount = wordCount;
             store.put(record);
