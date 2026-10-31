@@ -39,7 +39,7 @@ function openDatabase(): Promise<IDBDatabase> {
       return;
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = event => {
       const database = request.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: "id" });
@@ -50,7 +50,7 @@ function openDatabase(): Promise<IDBDatabase> {
       // A versão anterior guardava um único PDF com o ID "last-opened".
       // Mantemos esse registro e o usamos como primeiro item da biblioteca.
       const transaction = request.transaction;
-      if (transaction && request.oldVersion < 2) {
+      if (transaction && (event as IDBVersionChangeEvent).oldVersion < 2) {
         const store = transaction.objectStore(STORE_NAME);
         const legacyRequest = store.get(LAST_DOCUMENT_ID);
         legacyRequest.onsuccess = () => {
