@@ -71,7 +71,7 @@ jobs:
 
       - name: Install Android SDK packages
         env:
-          ANDROID_HOME: ${{ runner.tool_cache }}/android-sdk
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           if ! command -v sdkmanager >/dev/null 2>&1; then
